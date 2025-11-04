@@ -81,38 +81,42 @@
   <div class="matrix-bg" id="matrix"></div>
   <div class="login-box">
     <h2>Admin Access</h2>
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <div class="error" id="error"></div>
+    <form id="loginForm">
+      <input type="text" id="username" placeholder="Username" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+      <div class="error" id="error"></div>
+    </form>
   </div>
 
   <script>
-    // Simple fake login
-    function login() {
-      const user = document.getElementById('username').value;
-      const pass = document.getElementById('password').value;
-      const err = document.getElementById('error');
+    // Handle login safely
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+      e.preventDefault();
 
-      if (user === 'admin' && pass === 'zero123') {
-        window.location.href = 'dashboard.html';
+      const user = document.getElementById("username").value.trim();
+      const pass = document.getElementById("password").value.trim();
+      const err = document.getElementById("error");
+
+      if (user === "admin" && pass === "zero123") {
+        // ✅ Safe redirect for GitHub Pages
+        window.location.href = "./dashboard.html";
       } else {
-        err.textContent = 'Invalid credentials! Try again.';
+        err.textContent = "Invalid credentials! Try again.";
       }
-    }
+    });
 
     // Matrix rain background
-    const matrix = document.getElementById('matrix');
+    const matrix = document.getElementById("matrix");
     const columns = Math.floor(window.innerWidth / 20);
     const drops = Array(columns).fill(1);
 
     function drawMatrix() {
-      matrix.innerHTML = '';
-      let str = '';
+      let str = "";
       for (let i = 0; i < drops.length; i++) {
         str += String.fromCharCode(0x30A0 + Math.random() * 96);
       }
-      matrix.innerText = str;
+      matrix.textContent = str;
     }
     setInterval(drawMatrix, 100);
   </script>
