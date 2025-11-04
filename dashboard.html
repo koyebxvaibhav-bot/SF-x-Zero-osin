@@ -1,234 +1,608 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Dashboard — SF × ZERO OSINT</title>
-  <link rel="icon" href="logo.png">
+  <meta name="description" content="Admin dashboard — SF × ZERO OSINT (demo UI, localStorage backed)" />
   <style>
-    :root{--bg:#071223;--panel:#0b1220;--muted:#9fb6c8;--accent:#24e6ff;--accent2:#9b6bff}
+    :root{
+      --bg: #061423;
+      --panel:#0b1b2a;
+      --muted:#9fb6c8;
+      --accent:#24e6ff;
+      --accent2:#9b6bff;
+      --glass: rgba(255,255,255,0.03);
+    }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,var(--bg),#031023);color:#dbeef8}
+    body{margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;background:linear-gradient(180deg,var(--bg),#021425);color:#dbeef8;min-height:100vh}
     .app{display:flex;min-height:100vh}
-    aside{width:260px;padding:20px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-right:1px solid rgba(255,255,255,0.03)}
-    aside h2{margin:0 0 12px;font-size:1.1rem;color:var(--accent)}
-    .nav a{display:block;padding:10px;border-radius:8px;color:var(--muted);text-decoration:none;margin-bottom:6px}
-    .nav a.active{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#041020}
-    .main{flex:1;padding:20px}
-    .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px}
-    .search{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#dff}
-    .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+    aside{width:260px;padding:20px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-right:1px solid rgba(255,255,255,0.03);position:relative}
+    aside h2{margin:0 0 12px;font-size:1.15rem;color:var(--accent)}
+    .userSmall{font-size:13px;color:var(--muted);margin-bottom:10px}
+    .sidebar{display:flex;flex-direction:column;gap:6px}
+    .tab-btn{display:block;text-align:left;padding:10px;border-radius:8px;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:0.95rem}
+    .tab-btn.active{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#021020;font-weight:700}
+    .logout{margin-top:12px;padding:8px;border-radius:8px;border:none;background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);cursor:pointer}
+    .main{flex:1;padding:18px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .search{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#dff;min-width:220px}
+    .controls{display:flex;gap:10px;align-items:center}
+    .btn{padding:8px 12px;border-radius:8px;border:none;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#021020;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+    .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
     .card{background:var(--panel);padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
     .card h3{margin:0;font-size:0.95rem;color:var(--muted)}
-    .card .v{font-weight:700;font-size:1.4rem;margin-top:8px}
-
-    .grid-3{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}
+    .card .v{font-weight:800;font-size:1.6rem;margin-top:8px}
+    .grid-2{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}
     .panel{background:var(--panel);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
-
     table{width:100%;border-collapse:collapse}
     th,td{padding:8px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.95rem}
-
-    .actions{display:flex;gap:8px}
-    .btn{padding:8px 10px;border-radius:8px;border:none;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#021;cursor:pointer}
-    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
-
-    /* small screens */
-    @media (max-width:1000px){.cards{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:1fr}} 
-    @media (max-width:600px){aside{display:none}.cards{grid-template-columns:repeat(1,1fr)} }
+    code{background:rgba(0,0,0,0.25);padding:2px 6px;border-radius:6px;color:#aaf}
+    input[type="text"], input[type="email"], input[type="password"], textarea, select{
+      width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#dff;outline:none
+    }
+    .small{font-size:0.85rem;color:var(--muted)}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.04);font-size:13px;background:transparent}
+    .cols-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    @media (max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}.grid-2{grid-template-columns:1fr}}
+    @media (max-width:700px){aside{display:none}.cards{grid-template-columns:repeat(1,1fr)}}
+    .hidden{display:none}
+    .muted{color:var(--muted)}
   </style>
 </head>
 <body>
   <div class="app">
     <aside>
       <h2>SF × ZERO — Admin</h2>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:14px">Logged in as <strong id="adminName">admin</strong></div>
-      <div class="nav">
-        <a href="#overview" class="active">Overview</a>
-        <a href="#tools">Tools</a>
-        <a href="#logs">Activity Logs</a>
-        <a href="#visitors">Visitors</a>
-        <a href="#users">Users</a>
-        <a href="#apikeys">API Keys</a>
-        <a href="#tasks">Scheduled Tasks</a>
-        <a href="#settings">Settings</a>
+      <div class="userSmall">Logged in as <strong id="adminName">admin</strong></div>
+
+      <div class="sidebar" id="sidebar">
+        <!-- Tab buttons -->
+        <button class="tab-btn active" data-tab="overview">Overview</button>
+        <button class="tab-btn" data-tab="tools">Tools</button>
+        <button class="tab-btn" data-tab="logs">Activity Logs</button>
+        <button class="tab-btn" data-tab="visitors">Visitors</button>
+        <button class="tab-btn" data-tab="users">Users</button>
+        <button class="tab-btn" data-tab="apikeys">API Keys</button>
+        <button class="tab-btn" data-tab="tasks">Scheduled Tasks</button>
+        <button class="tab-btn" data-tab="notifications">Notifications</button>
+        <button class="tab-btn" data-tab="reports">Reports</button>
+        <button class="tab-btn" data-tab="integrations">Integrations</button>
+        <button class="tab-btn" data-tab="backups">Backups</button>
+        <button class="tab-btn" data-tab="audit">Audit</button>
+        <button class="tab-btn" data-tab="roles">Roles</button>
+        <button class="tab-btn" data-tab="sessions">Sessions</button>
+        <button class="tab-btn" data-tab="live">Live Monitor</button>
+        <button class="tab-btn" data-tab="health">System Health</button>
+        <button class="tab-btn" data-tab="settings">Settings</button>
+        <button class="tab-btn" data-tab="exports">Exports</button>
+        <button class="tab-btn" data-tab="import">Import</button>
+        <button class="tab-btn" data-tab="help">Help</button>
       </div>
-      <div style="margin-top:12px">
-        <button class="btn" onclick="logout()">Logout</button>
-      </div>
+
+      <button class="logout" id="logoutBtn">Logout</button>
     </aside>
 
     <main class="main">
       <div class="topbar">
-        <div><input class="search" id="globalSearch" placeholder="Search logs, users, IPs..." /></div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <div id="clock"></div>
-          <button class="ghost" onclick="simulateVisit()">Simulate Visit</button>
-          <button class="ghost" onclick="exportLogs()">Export Logs</button>
+        <input class="search" id="globalSearch" placeholder="Search logs, users, IPs..." />
+        <div class="controls">
+          <div id="clock" class="small muted"></div>
+          <button class="btn ghost" onclick="simulateVisit()">Simulate Visit</button>
+          <button class="btn ghost" onclick="exportLogs()">Export Logs</button>
+          <button class="btn ghost" onclick="clearDemo()">Clear Demo Data</button>
         </div>
       </div>
 
-      <div class="cards" id="overviewCards">
-        <div class="card"><h3>Total Visits</h3><div class="v" id="totalVisits">0</div></div>
-        <div class="card"><h3>Unique Devices</h3><div class="v" id="uniqueDevices">0</div></div>
-        <div class="card"><h3>Analyses</h3><div class="v" id="totalAnalyses">0</div></div>
-        <div class="card"><h3>Active Users</h3><div class="v" id="activeUsers">0</div></div>
-      </div>
+      <!-- ================== TABS / CONTENT ================== -->
+      <section id="overview" class="tab-content">
+        <div class="cards" style="margin-top:14px">
+          <div class="card"><h3>Total Visits</h3><div class="v" id="totalVisits">0</div></div>
+          <div class="card"><h3>Unique Devices</h3><div class="v" id="uniqueDevices">0</div></div>
+          <div class="card"><h3>Analyses</h3><div class="v" id="totalAnalyses">0</div></div>
+          <div class="card"><h3>Active Users</h3><div class="v" id="activeUsers">0</div></div>
+        </div>
 
-      <div class="grid-3">
-        <div>
-          <div class="panel">
-            <h3>Activity Feed</h3>
-            <div id="feed" style="max-height:240px;overflow:auto;margin-top:6px"></div>
+        <div class="grid-2">
+          <div>
+            <div class="panel">
+              <h3>Activity Feed</h3>
+              <div id="feed" style="max-height:260px;overflow:auto;margin-top:8px"></div>
+            </div>
+
+            <div class="panel" style="margin-top:12px">
+              <h3>Quick Terminal (UI)</h3>
+              <div id="term" style="background:#021022;padding:10px;border-radius:6px;color:#7fffcf;font-family:monospace;min-height:120px;white-space:pre-wrap;overflow:auto">$ sf×zero shell ready
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <input id="termInput" placeholder="type command (help)" />
+                <button class="btn" onclick="runTerm()">Run</button>
+              </div>
+            </div>
           </div>
 
-          <div class="panel" style="margin-top:12px">
-            <h3>Quick Terminal (UI)</h3>
-            <div id="term" style="background:#021022;padding:8px;border-radius:6px;color:#7fffcf;font-family:monospace;min-height:120px;white-space:pre-wrap;overflow:auto">$ welcome to sf×zero shell
-</div>
-            <div style="display:flex;gap:6px;margin-top:8px">
-              <input id="termInput" placeholder="type command (help)" style="flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#dff" />
-              <button class="btn" onclick="runTerm()">Run</button>
+          <div>
+            <div class="panel">
+              <h3>Visitor Summary</h3>
+              <div id="visitorSummary" style="margin-top:8px">Loading...</div>
+            </div>
+
+            <div class="panel" style="margin-top:12px">
+              <h3>Top Devices</h3>
+              <div id="deviceList" style="max-height:200px;overflow:auto"></div>
             </div>
           </div>
         </div>
+      </section>
 
-        <div>
+      <section id="tools" class="tab-content hidden">
+        <h2>Tools</h2>
+        <div class="cols-3" style="margin-top:12px">
           <div class="panel">
-            <h3>Visitor Summary</h3>
-            <div id="visitorSummary">Loading...</div>
+            <h3>IP Tracker</h3>
+            <input id="tool_ip" placeholder="8.8.8.8" />
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn" onclick="runIp()">Run</button>
+              <button class="btn ghost" onclick="fakeResult('ip')">Fake Result</button>
+            </div>
+            <div id="tool_ip_result" style="margin-top:8px" class="small muted">Results will appear here (UI demo).</div>
           </div>
 
-          <div class="panel" style="margin-top:12px">
-            <h3>Top Devices</h3>
-            <div id="deviceList" style="max-height:200px;overflow:auto"></div>
+          <div class="panel">
+            <h3>Username Lookup</h3>
+            <input id="tool_user" placeholder="username" />
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn" onclick="runUser()">Search</button>
+              <button class="btn ghost" onclick="fakeResult('user')">Fake Result</button>
+            </div>
+            <div id="tool_user_result" style="margin-top:8px" class="small muted">Results will appear here (UI demo).</div>
+          </div>
+
+          <div class="panel">
+            <h3>Domain Inspector</h3>
+            <input id="tool_domain" placeholder="example.com" />
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn" onclick="runDomain()">Inspect</button>
+              <button class="btn ghost" onclick="fakeResult('domain')">Fake Result</button>
+            </div>
+            <div id="tool_domain_result" style="margin-top:8px" class="small muted">Results will appear here (UI demo).</div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div style="margin-top:12px" class="panel">
-        <h3>Recent Logs</h3>
-        <table>
-          <thead><tr><th>Time</th><th>Type</th><th>IP / Device</th><th>Action</th></tr></thead>
-          <tbody id="logTable"></tbody>
-        </table>
-      </div>
+      <section id="logs" class="tab-content hidden">
+        <h2>Activity Logs</h2>
+        <div class="panel" style="margin-top:12px">
+          <table>
+            <thead><tr><th>Time</th><th>Type</th><th>Device/IP</th><th>Action</th></tr></thead>
+            <tbody id="logTable"></tbody>
+          </table>
+        </div>
+      </section>
 
-      <div style="margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-        <div class="panel">
-          <h3>Users</h3>
-          <div id="userTable"></div>
+      <section id="visitors" class="tab-content hidden">
+        <h2>Visitors</h2>
+        <div class="panel" style="margin-top:12px">
+          <h3>Recorded Devices</h3>
+          <div id="visitorsList"></div>
         </div>
-        <div class="panel">
-          <h3>API Keys</h3>
-          <p>Manage API keys (UI only)</p>
-          <div style="display:flex;gap:8px;margin-top:8px"><input id="newKeyName" placeholder="Key name" style="flex:1;padding:8px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.03)"/><button class="btn" onclick="createApiKey()">Create</button></div>
-          <div id="keysList" style="margin-top:8px"></div>
-        </div>
-        <div class="panel">
-          <h3>Scheduled Tasks</h3>
-          <p>Task runner UI (placeholders)</p>
-          <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="runTask('scan-pastes')">Run Leak Scan</button><button class="ghost" onclick="runTask('daily-report')">Daily Report</button></div>
-        </div>
-      </div>
+      </section>
 
-      <div style="margin-top:12px;text-align:right">
-        <button class="ghost" onclick="clearAll()">Clear All Demo Data</button>
-      </div>
+      <section id="users" class="tab-content hidden">
+        <h2>Users</h2>
+        <div class="panel" style="margin-top:12px">
+          <p class="small muted">Demo user list (UI only)</p>
+          <table>
+            <thead><tr><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr><td>admin</td><td>Owner</td><td><button class="btn ghost" onclick="impersonate('admin')">Impersonate</button></td></tr>
+              <tr><td>zero</td><td>Researcher</td><td><button class="btn ghost" onclick="impersonate('zero')">Impersonate</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="apikeys" class="tab-content hidden">
+        <h2>API Keys</h2>
+        <div class="panel" style="margin-top:12px">
+          <div style="display:flex;gap:8px">
+            <input id="newKeyName" placeholder="Key label" />
+            <button class="btn" onclick="createApiKey()">Create Key</button>
+          </div>
+          <div id="keysList" style="margin-top:12px"></div>
+        </div>
+      </section>
+
+      <section id="tasks" class="tab-content hidden">
+        <h2>Scheduled Tasks</h2>
+        <div class="panel">
+          <p class="small muted">Trigger demo tasks manually</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" onclick="runTask('leak-scan')">Run Leak Scan</button>
+            <button class="btn ghost" onclick="runTask('daily-report')">Generate Daily Report</button>
+            <button class="btn ghost" onclick="runTask('backup')">Run Backup</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="notifications" class="tab-content hidden">
+        <h2>Notifications</h2>
+        <div class="panel">
+          <p class="small muted">Recent notifications</p>
+          <div id="notifyList"></div>
+        </div>
+      </section>
+
+      <section id="reports" class="tab-content hidden">
+        <h2>Reports</h2>
+        <div class="panel">
+          <p class="small muted">Export and view generated reports</p>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="exportCSV()">Export Logs CSV</button>
+            <button class="btn ghost" onclick="exportLogs()">Export JSON</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="integrations" class="tab-content hidden">
+        <h2>Integrations</h2>
+        <div class="panel">
+          <p class="small muted">Connect external APIs later (placeholders)</p>
+          <div style="display:flex;gap:8px">
+            <button class="btn ghost" onclick="alert('Placeholder: connect service')">Connect IP API</button>
+            <button class="btn ghost" onclick="alert('Placeholder: connect service')">Connect Leak Monitor</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="backups" class="tab-content hidden">
+        <h2>Backups</h2>
+        <div class="panel">
+          <p class="small muted">Local demo backup/restore</p>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="backupData()">Create Backup</button>
+            <button class="btn ghost" onclick="restoreData()">Restore Backup</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="audit" class="tab-content hidden">
+        <h2>Audit</h2>
+        <div class="panel">
+          <p class="small muted">Audit trail (UI)</p>
+          <div id="auditList"></div>
+        </div>
+      </section>
+
+      <section id="roles" class="tab-content hidden">
+        <h2>Roles</h2>
+        <div class="panel">
+          <p class="small muted">Manage roles (UI only)</p>
+          <div><button class="btn ghost" onclick="alert('Add role - UI demo')">Add Role</button></div>
+        </div>
+      </section>
+
+      <section id="sessions" class="tab-content hidden">
+        <h2>Sessions</h2>
+        <div class="panel">
+          <p class="small muted">Active sessions</p>
+          <div id="sessionsList"></div>
+        </div>
+      </section>
+
+      <section id="live" class="tab-content hidden">
+        <h2>Live Monitor</h2>
+        <div class="panel">
+          <p class="small muted">Live requests (simulated)</p>
+          <div id="liveFeed"></div>
+        </div>
+      </section>
+
+      <section id="health" class="tab-content hidden">
+        <h2>System Health</h2>
+        <div class="panel">
+          <p class="small muted">CPU / Memory / Storage (placeholder)</p>
+          <div id="healthData">All systems nominal (demo)</div>
+        </div>
+      </section>
+
+      <section id="settings" class="tab-content hidden">
+        <h2>Settings</h2>
+        <div class="panel">
+          <p class="small muted">UI & retention settings</p>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn ghost" onclick="clearDemo()">Reset Demo</button>
+            <button class="btn" onclick="toggleSample()">Toggle Sample Data</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="exports" class="tab-content hidden">
+        <h2>Exports</h2>
+        <div class="panel">
+          <p class="small muted">Export logs and backups</p>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="exportCSV()">Export CSV</button>
+            <button class="btn" onclick="exportLogs()">Export JSON</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="import" class="tab-content hidden">
+        <h2>Import</h2>
+        <div class="panel">
+          <p class="small muted">Import previously exported data</p>
+          <input type="file" id="importFile" />
+          <div style="margin-top:8px"><button class="btn" onclick="importData()">Import</button></div>
+        </div>
+      </section>
+
+      <section id="help" class="tab-content hidden">
+        <h2>Help & Docs</h2>
+        <div class="panel">
+          <p class="small muted">Documentation & quick links</p>
+          <ul>
+            <li><a class="small muted" href="#" onclick="alert('Open docs - placeholder')">Open Documentation</a></li>
+            <li><a class="small muted" href="#" onclick="alert('Report issue - placeholder')">Report Issue</a></li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- End of tabs -->
 
     </main>
   </div>
 
   <script>
-    // Basic clock
-    function tick(){document.getElementById('clock').innerText=new Date().toLocaleString();}tick();setInterval(tick,1000);
+    // --- Auth guard (redirect to admin login if not logged in) ---
+    if(!sessionStorage.getItem('sfzero_admin')) {
+      location.href = 'admin.html';
+    } else {
+      const name = sessionStorage.getItem('sfzero_admin_user') || 'admin';
+      document.getElementById('adminName').innerText = name;
+    }
 
-    // Ensure sample data exists
+    // --- Tab system ---
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    function showTabByName(name){
+      tabContents.forEach(c => {
+        if(c.id === name) c.classList.remove('hidden');
+        else c.classList.add('hidden');
+      });
+      tabButtons.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+      // scroll top of main content
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        showTabByName(btn.dataset.tab);
+      });
+    });
+    // show default
+    showTabByName('overview');
+
+    // --- Clock ---
+    function tick(){ document.getElementById('clock').innerText = new Date().toLocaleString(); }
+    tick(); setInterval(tick,1000);
+
+    // --- LocalStorage demo data initialization ---
     function ensureSampleData(){
       if(!localStorage.getItem('sfzero_visits')) localStorage.setItem('sfzero_visits','128');
       if(!localStorage.getItem('sfzero_scans')) localStorage.setItem('sfzero_scans','42');
       if(!localStorage.getItem('sfzero_users')) localStorage.setItem('sfzero_users','7');
       if(!localStorage.getItem('sfzero_logs')){
-        const logs=[
-          {ts:new Date().toLocaleString(),type:'visit',device:'Windows 10',action:'page load',ip:'—'},
-          {ts:new Date().toLocaleString(),type:'scan',device:'Android',action:'username lookup',ip:'—'}
-        ];localStorage.setItem('sfzero_logs',JSON.stringify(logs));
+        const logs = [
+          {ts:new Date().toLocaleString(), type:'visit', device: navigator.platform || 'Unknown', action:'page load', ip:'—'},
+          {ts:new Date().toLocaleString(), type:'scan', device:'Android', action:'username lookup', ip:'—'}
+        ];
+        localStorage.setItem('sfzero_logs', JSON.stringify(logs));
       }
       if(!localStorage.getItem('sfzero_devices')){
-        const devs=[{os:navigator.platform||'Unknown',browser:navigator.userAgent.split(') ')[0],width:screen.width+'x'+screen.height,ip:'—',country:'—',ts:new Date().toLocaleString()}];
-        localStorage.setItem('sfzero_devices',JSON.stringify(devs));
+        const d = [{os:navigator.platform||'Unknown', browser:navigator.userAgent.split(')')[0], width:screen.width+'x'+screen.height, ip:'—', country:'—', ts:new Date().toLocaleString()}];
+        localStorage.setItem('sfzero_devices', JSON.stringify(d));
       }
-      if(!localStorage.getItem('sfzero_apikeys')) localStorage.setItem('sfzero_apikeys',JSON.stringify([]));
+      if(!localStorage.getItem('sfzero_apikeys')) localStorage.setItem('sfzero_apikeys', JSON.stringify([]));
     }
     ensureSampleData();
 
-    // Load overview
+    // --- Load dashboard data into UI ---
     function loadOverview(){
       document.getElementById('totalVisits').innerText = localStorage.getItem('sfzero_visits')||0;
       document.getElementById('totalAnalyses').innerText = localStorage.getItem('sfzero_scans')||0;
       document.getElementById('activeUsers').innerText = localStorage.getItem('sfzero_users')||0;
-      const devices = JSON.parse(localStorage.getItem('sfzero_devices')||'[]');
+      const devices = JSON.parse(localStorage.getItem('sfzero_devices') || '[]');
       document.getElementById('uniqueDevices').innerText = devices.length;
 
-      // visitor summary
-      const last = devices[devices.length-1]||{};
-      document.getElementById('visitorSummary').innerHTML = `<strong>Last:</strong> ${last.os||'—'} / ${last.browser||'—'} <br><strong>IP:</strong> ${last.ip||'—'}<br><strong>Country:</strong> ${last.country||'—'}<br><strong>Time:</strong> ${last.ts||'—'}`;
+      const last = devices[devices.length-1] || {};
+      document.getElementById('visitorSummary').innerHTML =
+        `<strong>Last:</strong> ${last.os||'—'} / ${last.browser||'—'}<br><strong>IP:</strong> ${last.ip||'—'}<br><strong>Country:</strong> ${last.country||'—'}<br><strong>Time:</strong> ${last.ts||'—'}`;
 
       // device list
-      const list = devices.map(d=>`<div style="padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.02);margin-bottom:6px">${d.os} — ${d.browser.split(' ')[0]} — ${d.width} — ${d.ip||'—'}</div>`).join('');
-      document.getElementById('deviceList').innerHTML = list;
+      document.getElementById('deviceList').innerHTML = devices.map(d => `<div style="padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.02);margin-bottom:6px">${d.os} — ${d.browser.split(' ')[0]} — ${d.width} — ${d.ip||'—'}</div>`).join('');
 
       // logs
-      const logs = JSON.parse(localStorage.getItem('sfzero_logs')||'[]');
-      const tbody = document.getElementById('logTable'); tbody.innerHTML='';
-      for(let r of logs.slice().reverse()){const tr=document.createElement('tr');tr.innerHTML=`<td>${r.ts}</td><td>${r.type}</td><td>${r.ip||r.device||'—'}</td><td>${r.action}</td>`;tbody.appendChild(tr)}
+      const logs = JSON.parse(localStorage.getItem('sfzero_logs') || '[]');
+      const logT = document.getElementById('logTable'); logT.innerHTML = '';
+      for(let r of logs.slice().reverse()){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.ts}</td><td>${r.type}</td><td>${r.ip || r.device || '—'}</td><td>${r.action}</td>`;
+        logT.appendChild(tr);
+      }
 
       // feed
-      document.getElementById('feed').innerHTML = logs.slice().reverse().slice(0,10).map(l=>`<div style="padding:6px;border-bottom:1px solid rgba(255,255,255,0.02)"><strong>${l.type}</strong> — ${l.action} <div style="font-size:12px;color:${'#9fb6c8'}">${l.ts}</div></div>`).join('');
+      document.getElementById('feed').innerHTML = logs.slice().reverse().slice(0,12).map(l => `<div style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.02)"><strong>${l.type}</strong> — ${l.action}<div style="font-size:12px;color:${'#9fb6c8'}">${l.ts}</div></div>`).join('');
 
-      // users
-      document.getElementById('userTable').innerHTML = `<table><tr><th>User</th><th>Role</th></tr><tr><td>admin</td><td>Owner</td></tr><tr><td>zero</td><td>Researcher</td></tr></table>`;
+      // visitors list
+      document.getElementById('visitorsList').innerHTML = devices.map(d => `<div style="padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.02);margin-bottom:6px">${d.ts} — ${d.os} — ${d.browser.split(' ')[0]} — ${d.ip||'—'} — ${d.country||'—'}</div>`).join('');
 
-      // api keys
+      // notifications / audit / sessions (simple)
+      document.getElementById('notifyList').innerHTML = logs.slice().reverse().slice(0,6).map(n => `<div style="padding:6px;border-bottom:1px solid rgba(255,255,255,0.02)">${n.type} — ${n.action} <div style="font-size:12px;color:var(--muted)">${n.ts}</div></div>`).join('');
+      document.getElementById('auditList').innerHTML = logs.slice().reverse().slice(0,8).map(a => `<div style="padding:6px;border-bottom:1px solid rgba(255,255,255,0.02)">${a.action} — ${a.ts}</div>`).join('');
+      document.getElementById('sessionsList').innerHTML = devices.map((d,i)=>`<div style="padding:6px;border-bottom:1px solid rgba(255,255,255,0.02)">Session ${i+1} — ${d.os} — ${d.ts}</div>`).join('');
+      document.getElementById('liveFeed').innerHTML = logs.slice().reverse().slice(0,6).map(l=>`<div style="padding:6px">${l.type} — ${l.action} <div style="font-size:12px;color:var(--muted)">${l.ts}</div></div>`).join('');
+
       renderKeys();
     }
     loadOverview();
 
-    // Terminal fake
-    function runTerm(){const cmd=document.getElementById('termInput').value.trim();const t=document.getElementById('term');if(!cmd)return; t.innerText += '\n$ '+cmd; if(cmd==='help'){t.innerText += '\ncommands: stats, clear, users'} if(cmd==='stats'){t.innerText += '\nvisits: '+localStorage.getItem('sfzero_visits')+' scans: '+localStorage.getItem('sfzero_scans')} if(cmd==='clear'){t.innerText += '\nclearing logs...'; localStorage.setItem('sfzero_logs',JSON.stringify([])); loadOverview();} document.getElementById('termInput').value=''; t.scrollTop = t.scrollHeight;}
-
-    // Simulate visit
-    function simulateVisit(){let v = parseInt(localStorage.getItem('sfzero_visits')||'0',10);v++;localStorage.setItem('sfzero_visits',v);const logs = JSON.parse(localStorage.getItem('sfzero_logs')||'[]');logs.push({ts:new Date().toLocaleString(),type:'visit',device:navigator.platform,action:'simulated visit',ip:'—'});localStorage.setItem('sfzero_logs',JSON.stringify(logs));const devices = JSON.parse(localStorage.getItem('sfzero_devices')||'[]');devices.push({os:navigator.platform,browser:navigator.userAgent.split(') ')[0],width:screen.width+'x'+screen.height,ip:'—',country:'—',ts:new Date().toLocaleString()});localStorage.setItem('sfzero_devices',JSON.stringify(devices));loadOverview();}
-
-    // Export logs
-    function exportLogs(){const logs=localStorage.getItem('sfzero_logs')||'[]';const blob=new Blob([logs],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='sfzero_logs.json';a.click();URL.revokeObjectURL(url)}
-
-    // API keys CRUD (demo)
-    function renderKeys(){const keys=JSON.parse(localStorage.getItem('sfzero_apikeys')||'[]');document.getElementById('keysList').innerHTML = keys.length?keys.map(k=>`<div style="padding:6px;border:1px solid rgba(255,255,255,0.02);border-radius:6px;margin-bottom:6px">${k.name} — <code style="font-size:12px">${k.key}</code> <button style="float:right" onclick="revokeKey('${k.key}')" class="ghost">Revoke</button></div>`).join(''):'No keys'}
+    // --- Actions ---
+    function simulateVisit(){
+      let v = parseInt(localStorage.getItem('sfzero_visits')||'0',10); v++; localStorage.setItem('sfzero_visits', String(v));
+      let logs = JSON.parse(localStorage.getItem('sfzero_logs')||'[]');
+      const device = {os:navigator.platform||'Unknown', browser:navigator.userAgent.split(')')[0], width:screen.width+'x'+screen.height, ip:'—', country:'—', ts:new Date().toLocaleString()};
+      logs.push({ts:new Date().toLocaleString(), type:'visit', device:device.os, action:'simulated visit', ip:device.ip});
+      localStorage.setItem('sfzero_logs', JSON.stringify(logs));
+      let devices = JSON.parse(localStorage.getItem('sfzero_devices')||'[]'); devices.push(device); localStorage.setItem('sfzero_devices', JSON.stringify(devices));
+      loadOverview();
+      alert('Simulated a visit and recorded device.');
     }
-    function createApiKey(){const name=document.getElementById('newKeyName').value.trim();if(!name)return alert('enter a name');const key = Math.random().toString(36).slice(2,18);const keys=JSON.parse(localStorage.getItem('sfzero_apikeys')||'[]');keys.push({name,key});localStorage.setItem('sfzero_apikeys',JSON.stringify(keys));document.getElementById('newKeyName').value='';renderKeys();}
-    function revokeKey(k){let keys=JSON.parse(localStorage.getItem('sfzero_apikeys')||'[]');keys=keys.filter(x=>x.key!==k);localStorage.setItem('sfzero_apikeys',JSON.stringify(keys));renderKeys();}
+
+    function runIp(){
+      const ip = document.getElementById('tool_ip').value.trim(); if(!ip){ alert('Enter an IP'); return; }
+      document.getElementById('tool_ip_result').innerText = `Looking up ${ip}... (demo)`;
+      // Add a log entry
+      addLog('ip-lookup', `ip lookup ${ip}`, ip);
+    }
+    function runUser(){ const u = document.getElementById('tool_user').value.trim(); if(!u){alert('enter username');return;} document.getElementById('tool_user_result').innerText = `Searching ${u}... (demo)`; addLog('user-search', `username lookup ${u}`, '—'); }
+    function runDomain(){ const d = document.getElementById('tool_domain').value.trim(); if(!d){alert('enter domain');return;} document.getElementById('tool_domain_result').innerText = `Inspecting ${d}... (demo)`; addLog('domain-inspect', `domain inspect ${d}`, d); }
+    function fakeResult(kind){ if(kind==='ip') document.getElementById('tool_ip_result').innerText = 'Geo: United States — Provider: DemoNet'; if(kind==='user') document.getElementById('tool_user_result').innerText = 'Found profiles: twitter/example, instagram/example (demo)'; if(kind==='domain') document.getElementById('tool_domain_result').innerText = 'WHOIS: Demo Registrar — Created: 2015-01-01'; }
+
+    // add log helper
+    function addLog(type, action, ip){
+      const logs = JSON.parse(localStorage.getItem('sfzero_logs')||'[]');
+      logs.push({ts:new Date().toLocaleString(), type, action, ip:ip||'—'});
+      localStorage.setItem('sfzero_logs', JSON.stringify(logs));
+      loadOverview();
+    }
+
+    // Terminal
+    function runTerm(){
+      const cmd = document.getElementById('termInput').value.trim(); const t = document.getElementById('term');
+      if(!cmd) return;
+      t.innerText += `\n$ ${cmd}`;
+      if(cmd === 'help'){ t.innerText += '\ncommands: stats, simulate, clearlogs, users'; }
+      if(cmd === 'stats'){ t.innerText += `\nvisits: ${localStorage.getItem('sfzero_visits')||0} scans: ${localStorage.getItem('sfzero_scans')||0}`; }
+      if(cmd === 'simulate'){ simulateVisit(); t.innerText += '\n(simulated visit)'; }
+      if(cmd === 'clearlogs'){ localStorage.setItem('sfzero_logs', JSON.stringify([])); loadOverview(); t.innerText += '\nlogs cleared'; }
+      document.getElementById('termInput').value = ''; t.scrollTop = t.scrollHeight;
+    }
+
+    // API keys
+    function renderKeys(){
+      const keys = JSON.parse(localStorage.getItem('sfzero_apikeys')||'[]');
+      const out = keys.length ? keys.map(k => `<div style="padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.02);margin-bottom:8px">${k.name} — <code>${k.key}</code> <button style="float:right" class="btn ghost" onclick="revokeKey('${k.key}')">Revoke</button></div>`).join('') : '<div class="small muted">No API keys</div>';
+      document.getElementById('keysList').innerHTML = out;
+    }
+    function createApiKey(){
+      const name = document.getElementById('newKeyName').value.trim();
+      if(!name) return alert('Enter a name');
+      const key = Math.random().toString(36).slice(2,18);
+      const keys = JSON.parse(localStorage.getItem('sfzero_apikeys')||'[]'); keys.push({name, key}); localStorage.setItem('sfzero_apikeys', JSON.stringify(keys));
+      document.getElementById('newKeyName').value = ''; renderKeys(); addLog('api', `created api key ${name}`, '—');
+    }
+    function revokeKey(k){ let keys = JSON.parse(localStorage.getItem('sfzero_apikeys')||'[]'); keys = keys.filter(x => x.key !== k); localStorage.setItem('sfzero_apikeys', JSON.stringify(keys)); renderKeys(); addLog('api', `revoked key ${k}`, '—'); }
 
     // Tasks
-    function runTask(id){const logs=JSON.parse(localStorage.getItem('sfzero_logs')||'[]');logs.push({ts:new Date().toLocaleString(),type:'task',device:'system',action:'ran '+id});localStorage.setItem('sfzero_logs',JSON.stringify(logs));loadOverview();alert('Task '+id+' simulated')}
+    function runTask(id){
+      addLog('task', `ran ${id}`, 'system');
+      alert('Task "'+id+'" simulated.');
+    }
 
-    // Export CSV (logs)
-    function exportCSV(){const logs=JSON.parse(localStorage.getItem('sfzero_logs')||'[]');let csv='time,type,device,action\n'+logs.map(l=>`"${l.ts}","${l.type}","${l.device||l.ip||''}","${l.action}"`).join('\n');const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='sfzero_logs.csv';a.click();URL.revokeObjectURL(url)}
+    // Export / Import
+    function exportLogs(){
+      const logs = localStorage.getItem('sfzero_logs') || '[]';
+      const blob = new Blob([logs], {type: 'application/json'}); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'sfzero_logs.json'; a.click(); URL.revokeObjectURL(url);
+    }
+    function exportCSV(){
+      const logs = JSON.parse(localStorage.getItem('sfzero_logs')||'[]');
+      const csv = 'time,type,device,action,ip\n' + logs.map(l => `"${l.ts}","${l.type}","${(l.device||'').toString().replace(/"/g,'') }","${l.action.replace(/"/g,'') }","${l.ip||''}"`).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'}); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'sfzero_logs.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+    function importData(){
+      const f = document.getElementById('importFile').files[0];
+      if(!f) return alert('Select a file');
+      const r = new FileReader();
+      r.onload = function(){ try{ const data = JSON.parse(r.result); if(Array.isArray(data)){ localStorage.setItem('sfzero_logs', JSON.stringify(data)); loadOverview(); alert('Imported logs'); } else alert('Invalid file'); } catch(e){ alert('Import failed'); } };
+      r.readAsText(f);
+    }
 
-    // Export logs alias
-    function exportLogsCSV(){exportCSV()}
+    // Backup / Restore
+    function backupData(){
+      const dump = {
+        visits: localStorage.getItem('sfzero_visits'),
+        scans: localStorage.getItem('sfzero_scans'),
+        users: localStorage.getItem('sfzero_users'),
+        logs: JSON.parse(localStorage.getItem('sfzero_logs')||'[]'),
+        devices: JSON.parse(localStorage.getItem('sfzero_devices')||'[]'),
+        apikeys: JSON.parse(localStorage.getItem('sfzero_apikeys')||'[]')
+      };
+      const blob = new Blob([JSON.stringify(dump, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'sfzero_backup.json'; a.click(); URL.revokeObjectURL(url);
+    }
+    function restoreData(){
+      const f = document.createElement('input'); f.type = 'file'; f.onchange = (e) => {
+        const file = e.target.files[0]; if(!file) return;
+        const r = new FileReader(); r.onload = () => {
+          try{
+            const j = JSON.parse(r.result);
+            if(j.logs) localStorage.setItem('sfzero_logs', JSON.stringify(j.logs));
+            if(j.visits) localStorage.setItem('sfzero_visits', String(j.visits));
+            if(j.scans) localStorage.setItem('sfzero_scans', String(j.scans));
+            if(j.devices) localStorage.setItem('sfzero_devices', JSON.stringify(j.devices));
+            if(j.apikeys) localStorage.setItem('sfzero_apikeys', JSON.stringify(j.apikeys));
+            loadOverview(); alert('Restore complete (demo)');
+          } catch(e){ alert('Restore failed'); }
+        }; r.readAsText(file);
+      }; f.click();
+    }
 
-    // Clear all demo data
-    function clearAll(){if(!confirm('Clear demo data?'))return;localStorage.removeItem('sfzero_visits');localStorage.removeItem('sfzero_scans');localStorage.removeItem('sfzero_logs');localStorage.removeItem('sfzero_devices');localStorage.removeItem('sfzero_apikeys');ensureSampleData();loadOverview();}
+    // Clear demo
+    function clearDemo(){
+      if(!confirm('Clear demo data from your browser?')) return;
+      localStorage.removeItem('sfzero_visits'); localStorage.removeItem('sfzero_scans'); localStorage.removeItem('sfzero_logs'); localStorage.removeItem('sfzero_devices'); localStorage.removeItem('sfzero_apikeys'); ensureSampleData(); loadOverview();
+      alert('Demo data reset.');
+    }
 
-    // Logout
-    function logout(){sessionStorage.removeItem('sfzero_admin');sessionStorage.removeItem('sfzero_admin_user');location.href='admin.html'}
+    // toggle sample (adds/removes sample)
+    function toggleSample(){ if(confirm('Remove sample data?')){ localStorage.removeItem('sfzero_logs'); localStorage.removeItem('sfzero_devices'); loadOverview(); } else { ensureSampleData(); loadOverview(); } }
 
-    // small utilities
-    function exportLogs(){const data=localStorage.getItem('sfzero_logs')||'[]';const blob=new Blob([data],{type:'application/json'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='sfzero_logs.json';a.click();URL.revokeObjectURL(u)}
+    // impersonate
+    function impersonate(user){ sessionStorage.setItem('sfzero_admin_user', user); document.getElementById('adminName').innerText = user; addLog('admin', `impersonated ${user}`, '—'); }
 
-    // initial load
-    loadOverview();
+    // Sessions / Live feed helpers
+    function randomLive(){ const types = ['visit','scan','api','task']; const t = types[Math.floor(Math.random()*types.length)]; addLog(t, 'live event ' + Math.random().toString(36).slice(2,6), '—'); loadOverview(); }
+    setInterval(() => { /* add occasional live event for demo */ if(Math.random() < 0.05) randomLive(); }, 5000);
 
+    // logout
+    document.getElementById('logoutBtn').addEventListener('click', () => { sessionStorage.removeItem('sfzero_admin'); sessionStorage.removeItem('sfzero_admin_user'); location.href='admin.html'; });
+
+    // Run on page start
+    renderKeys(); loadOverview();
+
+    // Helpers for simple UI-run tools:
+    function addNotification(msg){ const not = JSON.parse(localStorage.getItem('sfzero_notifications')||'[]'); not.push({ts:new Date().toLocaleString(), msg}); localStorage.setItem('sfzero_notifications', JSON.stringify(not)); loadOverview(); }
+    function runIpDemoResult(ip){ document.getElementById('tool_ip_result').innerText = `IP: ${ip} — Country: DemoLand — Provider: DemoNet`; addLog('ip', `ip demo resolved ${ip}`, ip); }
+
+    // Convenience: expose some functions to global
+    window.simulateVisit = simulateVisit;
+    window.exportLogs = exportLogs;
+    window.exportCSV = exportCSV;
+    window.createApiKey = createApiKey;
+    window.revokeKey = revokeKey;
+    window.runTask = runTask;
+    window.backupData = backupData;
+    window.restoreData = restoreData;
+    window.clearDemo = clearDemo;
+    window.importData = importData;
+    window.runIp = runIp;
+    window.runUser = runUser;
+    window.runDomain = runDomain;
+    window.fakeResult = fakeResult;
+    window.impersonate = impersonate;
   </script>
 </body>
 </html>
