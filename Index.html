@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SF × ZERO OSINT</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="particles.js" defer></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: radial-gradient(circle at top, #0a0a1a, #050510);
+      color: #e0e0ff;
+      overflow-x: hidden;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.5);
+      position: fixed;
+      width: 100%;
+      top: 0;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+    }
+    header h1 {
+      font-size: 1.4em;
+      color: #00e6ff;
+      letter-spacing: 2px;
+    }
+    .admin-btn {
+      background: #00e6ff;
+      color: #0a0a1a;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+    .admin-btn:hover {
+      background: #ff00cc;
+      color: #fff;
+      transform: scale(1.05);
+    }
+    section {
+      min-height: 100vh;
+      padding: 100px 50px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .hero {
+      background: linear-gradient(135deg, rgba(0,230,255,0.1), rgba(255,0,204,0.05));
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .feature-box {
+      background: rgba(255,255,255,0.05);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,230,255,0.2);
+      transition: all 0.3s;
+    }
+    .feature-box:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 0 25px rgba(255,0,204,0.4);
+    }
+    footer {
+      background: #000;
+      color: #aaa;
+      text-align: center;
+      padding: 20px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div id="particles-js"></div>
+  <header>
+    <button class="admin-btn" onclick="window.location.href='admin.html'">Admin Login</button>
+    <h1>SF × ZERO OSINT</h1>
+  </header>
+
+  <section class="hero" id="home">
+    <h2>Welcome to SF × ZERO OSINT</h2>
+    <p>Open Source Intelligence Platform - Investigate the Web Like a Pro</p>
+  </section>
+
+  <section id="about">
+    <h2>About OSINT</h2>
+    <p>OSINT (Open Source Intelligence) is the art of gathering publicly available data for investigation, analysis, and security.</p>
+  </section>
+
+  <section id="mission">
+    <h2>Mission & Vision</h2>
+    <p>Our mission is to make digital intelligence accessible, transparent, and ethical for everyone.</p>
+  </section>
+
+  <section id="features">
+    <h2>Core Features</h2>
+    <div class="features">
+      <div class="feature-box">Username Lookup</div>
+      <div class="feature-box">IP Tracker</div>
+      <div class="feature-box">Domain Scanner</div>
+      <div class="feature-box">Email Analyzer</div>
+      <div class="feature-box">Metadata Viewer</div>
+      <div class="feature-box">Dark Web Monitor</div>
+      <div class="feature-box">Leak Checker</div>
+      <div class="feature-box">Geo Locator</div>
+      <div class="feature-box">Social Graph</div>
+      <div class="feature-box">Real-time Dashboard</div>
+    </div>
+  </section>
+
+  <section id="analyzer">
+    <h2>Live Analyzer</h2>
+    <p>Simulated search console for demonstration.</p>
+    <input type="text" placeholder="Enter username, IP, or domain..." style="padding:10px;width:60%;border-radius:8px;border:none;">
+  </section>
+
+  <section id="stats">
+    <h2>Platform Stats</h2>
+    <p>Users Scanned: <strong>14,532</strong></p>
+    <p>Active Tools: <strong>10</strong></p>
+  </section>
+
+  <section id="team">
+    <h2>Team</h2>
+    <p>Meet the dedicated researchers behind SF × ZERO OSINT.</p>
+  </section>
+
+  <section id="community">
+    <h2>Community Updates</h2>
+    <p>Stay informed with the latest OSINT news and cyber trends.</p>
+  </section>
+
+  <section id="faq">
+    <h2>FAQ</h2>
+    <p>Q: What makes SF × ZERO OSINT different?<br>A: Our focus on privacy, transparency, and simplicity.</p>
+  </section>
+
+  <section id="contact">
+    <h2>Contact Us</h2>
+    <p>Email: support@sfzeroosint.com</p>
+  </section>
+
+  <footer>
+    <p>© <span id="year"></span> SF × ZERO OSINT — Built for Intelligence</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
