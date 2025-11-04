@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard — SF × ZERO OSINT</title>
+  <link rel="icon" href="logo.png">
+  <style>
+    :root{--bg:#071223;--panel:#0b1220;--muted:#9fb6c8;--accent:#24e6ff;--accent2:#9b6bff}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,var(--bg),#031023);color:#dbeef8}
+    .app{display:flex;min-height:100vh}
+    aside{width:260px;padding:20px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-right:1px solid rgba(255,255,255,0.03)}
+    aside h2{margin:0 0 12px;font-size:1.1rem;color:var(--accent)}
+    .nav a{display:block;padding:10px;border-radius:8px;color:var(--muted);text-decoration:none;margin-bottom:6px}
+    .nav a.active{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#041020}
+    .main{flex:1;padding:20px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .search{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#dff}
+    .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+    .card{background:var(--panel);padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+    .card h3{margin:0;font-size:0.95rem;color:var(--muted)}
+    .card .v{font-weight:700;font-size:1.4rem;margin-top:8px}
+
+    .grid-3{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}
+    .panel{background:var(--panel);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.95rem}
+
+    .actions{display:flex;gap:8px}
+    .btn{padding:8px 10px;border-radius:8px;border:none;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#021;cursor:pointer}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+
+    /* small screens */
+    @media (max-width:1000px){.cards{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:1fr}} 
+    @media (max-width:600px){aside{display:none}.cards{grid-template-columns:repeat(1,1fr)} }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <h2>SF × ZERO — Admin</h2>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px">Logged in as <strong id="adminName">admin</strong></div>
+      <div class="nav">
+        <a href="#overview" class="active">Overview</a>
+        <a href="#tools">Tools</a>
+        <a href="#logs">Activity Logs</a>
+        <a href="#visitors">Visitors</a>
+        <a href="#users">Users</a>
+        <a href="#apikeys">API Keys</a>
+        <a href="#tasks">Scheduled Tasks</a>
+        <a href="#settings">Settings</a>
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn" onclick="logout()">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div><input class="search" id="globalSearch" placeholder="Search logs, users, IPs..." /></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div id="clock"></div>
+          <button class="ghost" onclick="simulateVisit()">Simulate Visit</button>
+          <button class="ghost" onclick="exportLogs()">Export Logs</button>
+        </div>
+      </div>
+
+      <div class="cards" id="overviewCards">
+        <div class="card"><h3>Total Visits</h3><div class="v" id="totalVisits">0</div></div>
+        <div class="card"><h3>Unique Devices</h3><div class="v" id="uniqueDevices">0</div></div>
+        <div class="card"><h3>Analyses</h3><div class="v" id="totalAnalyses">0</div></div>
+        <div class="card"><h3>Active Users</h3><div class="v" id="activeUsers">0</div></div>
+      </div>
+
+      <div class="grid-3">
+        <div>
+          <div class="panel">
+            <h3>Activity Feed</h3>
+            <div id="feed" style="max-height:240px;overflow:auto;margin-top:6px"></div>
+          </div>
+
+          <div class="panel" style="margin-top:12px">
+            <h3>Quick Terminal (UI)</h3>
+            <div id="term" style="background:#021022;padding:8px;border-radius:6px;color:#7fffcf;font-family:monospace;min-height:120px;white-space:pre-wrap;overflow:auto">$ welcome to sf×zero shell
+</div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <input id="termInput" placeholder="type command (help)" style="flex:1;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#dff" />
+              <button class="btn" onclick="runTerm()">Run</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h3>Visitor Summary</h3>
+            <div id="visitorSummary">Loading...</div>
+          </div>
+
+          <div class="panel" style="margin-top:12px">
+            <h3>Top Devices</h3>
+            <div id="deviceList" style="max-height:200px;overflow:auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px" class="panel">
+        <h3>Recent Logs</h3>
+        <table>
+          <thead><tr><th>Time</th><th>Type</th><th>IP / Device</th><th>Action</th></tr></thead>
+          <tbody id="logTable"></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div class="panel">
+          <h3>Users</h3>
+          <div id="userTable"></div>
+        </div>
+        <div class="panel">
+          <h3>API Keys</h3>
+          <p>Manage API keys (UI only)</p>
+          <div style="display:flex;gap:8px;margin-top:8px"><input id="newKeyName" placeholder="Key name" style="flex:1;padding:8px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.03)"/><button class="btn" onclick="createApiKey()">Create</button></div>
+          <div id="keysList" style="margin-top:8px"></div>
+        </div>
+        <div class="panel">
+          <h3>Scheduled Tasks</h3>
+          <p>Task runner UI (placeholders)</p>
+          <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="runTask('scan-pastes')">Run Leak Scan</button><button class="ghost" onclick="runTask('daily-report')">Daily Report</button></div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;text-align:right">
+        <button class="ghost" onclick="clearAll()">Clear All Demo Data</button>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    // Basic clock
+    function tick(){document.getElementById('clock').innerText=new Date().toLocaleString();}tick();setInterval(tick,1000);
+
+    // Ensure sample data exists
+    function ensureSampleData(){
+      if(!localStorage.getItem('sfzero_visits')) localStorage.setItem('sfzero_visits','128');
+      if(!localStorage.getItem('sfzero_scans')) localStorage.setItem('sfzero_scans','42');
+      if(!localStorage.getItem('sfzero_users')) localStorage.setItem('sfzero_users','7');
+      if(!localStorage.getItem('sfzero_logs')){
+        const logs=[
+          {ts:new Date().toLocaleString(),type:'visit',device:'Windows 10',action:'page load',ip:'—'},
+          {ts:new Date().toLocaleString(),type:'scan',device:'Android',action:'username lookup',ip:'—'}
+        ];localStorage.setItem('sfzero_logs',JSON.stringify(logs));
+      }
+      if(!localStorage.getItem('sfzero_devices')){
+        const devs=[{os:navigator.platform||'Unknown',browser:navigator.userAgent.split(') ')[0],width:screen.width+'x'+screen.height,ip:'—',country:'—',ts:new Date().toLocaleString()}];
+        localStorage.setItem('sfzero_devices',JSON.stringify(devs));
+      }
+      if(!localStorage.getItem('sfzero_apikeys')) localStorage.setItem('sfzero_apikeys',JSON.stringify([]));
+    }
+    ensureSampleData();
+
+    // Load overview
+    function loadOverview(){
+      document.getElementById('totalVisits').innerText = localStorage.getItem('sfzero_visits')||0;
+      document.getElementById('totalAnalyses').innerText = localStorage.getItem('sfzero_scans')||0;
+      document.getElementById('activeUsers').innerText = localStorage.getItem('sfzero_users')||0;
+      const devices = JSON.parse(localStorage.getItem('sfzero_devices')||'[]');
+      document.getElementById('uniqueDevices').innerText = devices.length;
+
+      // visitor summary
+      const last = devices[devices.length-1]||{};
+      document.getElementById('visitorSummary').innerHTML = `<strong>Last:</strong> ${last.os||'—'} / ${last.browser||'—'} <br><strong>IP:</strong> ${last.ip||'—'}<br><strong>Country:</strong> ${last.country||'—'}<br><strong>Time:</strong> ${last.ts||'—'}`;
+
+      // device list
+      const list = devices.map(d=>`<div style="padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.02);margin-bottom:6px">${d.os} — ${d.browser.split(' ')[0]} — ${d.width} — ${d.ip||'—'}</div>`).join('');
+      document.getElementById('deviceList').innerHTML = list;
+
+      // logs
+      const logs = JSON.parse(localStorage.getItem('sfzero_logs')||'[]');
+      const tbody = document.getElementById('logTable'); tbody.innerHTML='';
+      for(let r of logs.slice().reverse()){const tr=document.createElement('tr');tr.innerHTML=`<td>${r.ts}</td><td>${r.type}</td><td>${r.ip||r.device||'—'}</td><td>${r.action}</td>`;tbody.appendChild(tr)}
+
+      // feed
+      document.getElementById('feed').innerHTML = logs.slice().reverse().slice(0,10).map(l=>`<div style="padding:6px;border-bottom:1px solid rgba(255,255,255,0.02)"><strong>${l.type}</strong> — ${l.action} <div style="font-size:12px;color:${'#9fb6c8'}">${l.ts}</div></div>`).join('');
+
+      // users
+      document.getElementById('userTable').innerHTML = `<table><tr><th>User</th><th>Role</th></tr><tr><td>admin</td><td>Owner</td></tr><tr><td>zero</td><td>Researcher</td></tr></table>`;
+
+      // api keys
+      renderKeys();
+    }
+    loadOverview();
+
+    // Terminal fake
+    function runTerm(){const cmd=document.getElementById('termInput').value.trim();const t=document.getElementById('term');if(!cmd)return; t.innerText += '\n$ '+cmd; if(cmd==='help'){t.innerText += '\ncommands: stats, clear, users'} if(cmd==='stats'){t.innerText += '\nvisits: '+localStorage.getItem('sfzero_visits')+' scans: '+localStorage.getItem('sfzero_scans')} if(cmd==='clear'){t.innerText += '\nclearing logs...'; localStorage.setItem('sfzero_logs',JSON.stringify([])); loadOverview();} document.getElementById('termInput').value=''; t.scrollTop = t.scrollHeight;}
+
+    // Simulate visit
+    function simulateVisit(){let v = parseInt(localStorage.getItem('sfzero_visits')||'0',10);v++;localStorage.setItem('sfzero_visits',v);const logs = JSON.parse(localStorage.getItem('sfzero_logs')||'[]');logs.push({ts:new Date().toLocaleString(),type:'visit',device:navigator.platform,action:'simulated visit',ip:'—'});localStorage.setItem('sfzero_logs',JSON.stringify(logs));const devices = JSON.parse(localStorage.getItem('sfzero_devices')||'[]');devices.push({os:navigator.platform,browser:navigator.userAgent.split(') ')[0],width:screen.width+'x'+screen.height,ip:'—',country:'—',ts:new Date().toLocaleString()});localStorage.setItem('sfzero_devices',JSON.stringify(devices));loadOverview();}
+
+    // Export logs
+    function exportLogs(){const logs=localStorage.getItem('sfzero_logs')||'[]';const blob=new Blob([logs],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='sfzero_logs.json';a.click();URL.revokeObjectURL(url)}
+
+    // API keys CRUD (demo)
+    function renderKeys(){const keys=JSON.parse(localStorage.getItem('sfzero_apikeys')||'[]');document.getElementById('keysList').innerHTML = keys.length?keys.map(k=>`<div style="padding:6px;border:1px solid rgba(255,255,255,0.02);border-radius:6px;margin-bottom:6px">${k.name} — <code style="font-size:12px">${k.key}</code> <button style="float:right" onclick="revokeKey('${k.key}')" class="ghost">Revoke</button></div>`).join(''):'No keys'}
+    }
+    function createApiKey(){const name=document.getElementById('newKeyName').value.trim();if(!name)return alert('enter a name');const key = Math.random().toString(36).slice(2,18);const keys=JSON.parse(localStorage.getItem('sfzero_apikeys')||'[]');keys.push({name,key});localStorage.setItem('sfzero_apikeys',JSON.stringify(keys));document.getElementById('newKeyName').value='';renderKeys();}
+    function revokeKey(k){let keys=JSON.parse(localStorage.getItem('sfzero_apikeys')||'[]');keys=keys.filter(x=>x.key!==k);localStorage.setItem('sfzero_apikeys',JSON.stringify(keys));renderKeys();}
+
+    // Tasks
+    function runTask(id){const logs=JSON.parse(localStorage.getItem('sfzero_logs')||'[]');logs.push({ts:new Date().toLocaleString(),type:'task',device:'system',action:'ran '+id});localStorage.setItem('sfzero_logs',JSON.stringify(logs));loadOverview();alert('Task '+id+' simulated')}
+
+    // Export CSV (logs)
+    function exportCSV(){const logs=JSON.parse(localStorage.getItem('sfzero_logs')||'[]');let csv='time,type,device,action\n'+logs.map(l=>`"${l.ts}","${l.type}","${l.device||l.ip||''}","${l.action}"`).join('\n');const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='sfzero_logs.csv';a.click();URL.revokeObjectURL(url)}
+
+    // Export logs alias
+    function exportLogsCSV(){exportCSV()}
+
+    // Clear all demo data
+    function clearAll(){if(!confirm('Clear demo data?'))return;localStorage.removeItem('sfzero_visits');localStorage.removeItem('sfzero_scans');localStorage.removeItem('sfzero_logs');localStorage.removeItem('sfzero_devices');localStorage.removeItem('sfzero_apikeys');ensureSampleData();loadOverview();}
+
+    // Logout
+    function logout(){sessionStorage.removeItem('sfzero_admin');sessionStorage.removeItem('sfzero_admin_user');location.href='admin.html'}
+
+    // small utilities
+    function exportLogs(){const data=localStorage.getItem('sfzero_logs')||'[]';const blob=new Blob([data],{type:'application/json'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='sfzero_logs.json';a.click();URL.revokeObjectURL(u)}
+
+    // initial load
+    loadOverview();
+
+  </script>
+</body>
+</html>
